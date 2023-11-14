@@ -1,0 +1,59 @@
+# Ignore compiled binaries and executables
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.out
+*.so
+
+# Ignore logs and temporary files
+*.log
+*.tmp
+*.pid
+*.swp
+*~
+
+# Ignore environment-specific files
+.env
+.env.local
+.env.*.local
+.env.*.override
+
+# Ignore dependencies
+/node_modules
+/bower_components
+
+# Ignore build output
+/build
+/dist
+/out
+
+# Ignore database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Ignore IDE and editor files
+.vscode/
+.idea/
+
+# Ignore configuration files
+*.iml
+*.log
+
+# Ignore sensitive information
+*.secret
+*.key
+*.pem
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+# Ignore test and coverage directories
+/coverage
+/tests
+
+# Ignore production-specific files
+/production-specific
