@@ -5,7 +5,7 @@ const app = express();
 const {User} = require("./Schema");
 
 
-
+ 
 const cors = require("cors")
 app.use(cors({
 origin:"*",
@@ -53,6 +53,28 @@ app.post("/login", async (req, res) => {
       console.error("Error querying user:", error);
       res.status(500).send("Error querying user");
     }
+  });
+  
+
+
+  app.post("/register", (req, res) => {
+    const { phone, pass,name } = req.body;
+
+    const register = new User({
+      phone: req.body.phone,
+      pass: req.body.pass, 
+      name: req.body.naming,
+    });
+  
+    register.save()
+      .then(() => {
+        console.log("User saved");
+        res.status(201).json({ message: "User saved" });
+      })
+      .catch((error) => {
+        console.error("Error saving user:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+      });
   });
   
 
