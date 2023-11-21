@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const app = express();
 const {User} = require("./Schema");
 
-
+var nodemailer = require('nodemailer');
  
 const cors = require("cors")
 app.use(cors({
@@ -77,9 +77,39 @@ app.post("/login", async (req, res) => {
       });
   });
   
+app.post('/sendemail', (req, res) => {
+
+  const {name,phone,email,message } = req.body;
+
+
+
+var transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'sharan.gisterpages@gmail.com',
+    pass: 'vmewcuxtoyexrjsj'
+  }
+});
+
+var mailOptions = {
+  from: 'sharan.gisterpages@gmail.com',
+  to: 'sharanmack06@gmail.com',
+  subject: 'Contact Form',
+  text: `Name: ${name}\nEmail: ${email}\nphone : ${phone}\nMessage : ${message}`
+};
+
+transporter.sendMail(mailOptions, function(error, info){
+  if (error) {
+    res.json({emailsent: false });
+  } else {
+    res.json({ emailsent: true });
+  }
+});
+});
+
+
 
 app.listen(3000, () => {
     console.log("Server started on port 3000");
 });
-  
   
