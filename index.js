@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const app = express();
+const multer = require('multer');
 const {User} = require("./Schema");
 
 var nodemailer = require('nodemailer');
@@ -108,6 +109,46 @@ transporter.sendMail(mailOptions, function(error, info){
 });
 
 
+
+const fileSchema = new mongoose.Schema({
+  filename: String,
+  path: String,
+});
+
+
+const File = mongoose.model('File', fileSchema);
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Uploads will be stored in the 'uploads' directory
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
+
+app.post('/upload', upload.single('file'), async (req, res) => {
+  try {
+    const { originalname, path } = req.file;
+    const file = new File({ filename: originalname, path: path });
+    await file.save();
+    res.status(201).json({ message: 'File uploaded successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error uploading file' });
+  }
+});
+
+app.get('/files', async (req, res) => {
+  console.log("HII")
+  try {
+    const files = await File.find();
+    res.json(files);
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving files' });
+  }
+});
 
 app.listen(3000, () => {
     console.log("Server started on port 3000");
