@@ -12,6 +12,7 @@ app.use(cors({
 origin:"*",
 }));
 
+app.use('/uploads', express.static('uploads'));
 
 mongoose.connect('mongodb://0.0.0.0:27017/Sharan', {
     useNewUrlParser: true,
@@ -117,10 +118,9 @@ const fileSchema = new mongoose.Schema({
 
 
 const File = mongoose.model('File', fileSchema);
-
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Uploads will be stored in the 'uploads' directory
+    cb(null, 'uploads'); // Uploads will be stored in the 'uploads' directory
   },
   filename: (req, file, cb) => {
     cb(null, file.originalname);
@@ -141,9 +141,10 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 });
 
 app.get('/files', async (req, res) => {
-  console.log("HII")
+  
   try {
     const files = await File.find();
+    console.log(files)
     res.json(files);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving files' });
