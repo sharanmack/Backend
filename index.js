@@ -114,13 +114,21 @@ transporter.sendMail(mailOptions, function(error, info){
 const fileSchema = new mongoose.Schema({
   filename: String,
   path: String,
+  email : String,
+  brand : String,
+  carName : String,
+  carModel : String,
+  fuelType : String,
+  carkilometre : Number,
+  carPrice : Number,
+  contactDetails : String
 });
 
 
 const File = mongoose.model('File', fileSchema);
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads'); // Uploads will be stored in the 'uploads' directory
+    cb(null, 'uploads'); 
   },
   filename: (req, file, cb) => {
     cb(null, file.originalname);
@@ -129,10 +137,24 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+// app.post('/upload', upload.single('file'), async (req, res) => {
+//   try {
+//     const { originalname, path ,email,brand } = req.file;
+//     const file = new File({ filename: originalname, brand: brand , email : email });
+//     await file.save();
+//     res.status(201).json({ message: 'File uploaded successfully' });
+//   } catch (error) {
+//     res.status(500).json({ message: 'Error uploading file' });
+//   }
+// });
+
+
 app.post('/upload', upload.single('file'), async (req, res) => {
   try {
-    const { originalname, path } = req.file;
-    const file = new File({ filename: originalname, path: path });
+    const { originalname} = req.file;
+    const { email, brand,carName,carModel,fuelType,carkilometre,carPrice,contactDetails } = req.body; // Access form data from req.body
+
+    const file = new File({ filename: originalname, email: email, brand: brand,carName : carName,carModel : carModel,fuelType : fuelType,carkilometre : carkilometre ,carPrice : carPrice , contactDetails : contactDetails });
     await file.save();
     res.status(201).json({ message: 'File uploaded successfully' });
   } catch (error) {
@@ -144,7 +166,6 @@ app.get('/files', async (req, res) => {
   
   try {
     const files = await File.find();
-    console.log(files)
     res.json(files);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving files' });
