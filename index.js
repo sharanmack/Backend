@@ -5,8 +5,9 @@ const app = express();
 const multer = require('multer');
 const {User} = require("./Schema");
 
-const fs = require('fs');
+// const fs = require('fs');
 const path = require('path');
+const fs = require('fs/promises');
 
 var nodemailer = require('nodemailer');
  
@@ -39,7 +40,7 @@ app.delete('/deleteImage', (req, res) => {
     return res.status(400).send('ImageName parameter is required.');
   }
 
-  const imagePath = path.join(__dirname, 'uploads', imageName); // Adjust the path accordingly
+  const imagePath = path.join(__dirname, 'uploads', imageName); 
 
   fs.unlink(imagePath, (err) => {
     if (err) {
@@ -201,6 +202,159 @@ app.get('/files', async (req, res) => {
     res.status(500).json({ message: 'Error retrieving files' });
   }
 });
+
+
+// app.post("/deletecar",async(req,res)=>{
+//   const {email,brand,images} =req.body
+//   console.log(images)
+
+//   try {
+//    const post = await Post.findOne({ 'posts.name': name });
+
+//    if (!post) {
+//      return res.status(404).json({ postNotFound: true });
+//    }
+
+//    const targetPost = post.posts.find((p) => p.name === name);
+
+//    if (!targetPost) {
+//      return res.status(404).json({ postNotFound: true });
+//    }
+
+//    // Replace the entire comments array with the new one
+//    targetPost.comments = comments;
+//    await post.save();
+
+//    // Send a success response
+//    res.status(200).json({ success: true, message: 'Comments updated successfully' });
+//  } catch (error) {
+//    console.error(error);
+//    res.status(500).json({ error: 'An error occurred while updating comments' });
+//  }
+// })
+
+
+
+const uploadDirectory = path.join(__dirname, 'uploads');
+
+// app.delete('/deletecar', async (req, res) => {
+//   const { images } = req.body;
+  
+
+//   try {
+//     const updatedImages = [];
+
+//     // Loop through the images array and delete each file
+//     for (const image of images) {
+//       const { filename } = image;
+//       console.log(filename)
+//       // const filePath = path.join(uploadDirectory, filename);
+//       const imagePath = path.join(__dirname, 'uploads', filename); 
+
+//       try {
+//         // Check if the file exists
+//         await fs.access(imagePath);
+
+//         // Delete the file
+//         await fs.unlink(imagePath);
+
+//         // Add the deleted file to the updated images array
+//         // updatedImages.push(image);
+//       } catch (error) {
+//         console.error(`Error deleting file ${filename}: ${error.message}`);
+//       }
+//     }
+
+//     // Send the updated images array in the response
+//     res.json({ images: updatedImages });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
+
+
+// app.delete('/deletecar', async (req, res) => {
+//   const { images } = req.body;
+
+  
+//   try {
+//     const updatedImages = [];
+
+//     // Loop through the images array and delete each file
+//     for (const image of images) {
+//       const { filename } = image;
+//       console.log(filename);
+//       const imagePath = path.join(__dirname, 'uploads', filename);
+
+//       try {
+//         // Check if the file exists
+//         await fs.access(imagePath);
+
+//         // Delete the file
+//         await fs.unlink(imagePath);
+
+//         // Add the deleted file to the updated images array
+//         updatedImages.push(image);
+//       } catch (error) {
+//         console.error(`Error deleting file ${filename}: ${error.message}`);
+//       }
+//     }
+
+//     res.json({ result: true });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
+
+
+app.delete('/deletecar', async (req, res) => {
+  const { email, brand, carName, images } = req.body;
+
+  try {
+    const updatedImages = [];
+
+    // Loop through the images array and delete each file
+    for (const image of images) {
+      const { filename } = image;
+      const imagePath = path.join(__dirname, 'uploads', filename);
+
+      try {
+        // Check if the file exists
+        await fs.access(imagePath);
+
+        // Delete the file
+        await fs.unlink(imagePath);
+
+        // Add the deleted file to the updated images array
+        updatedImages.push(image);
+      } catch (error) {
+        console.error(`Error deleting file ${filename}: ${error.message}`);
+      }
+    }
+
+    // After deleting images, delete the entire collection
+    try {
+      // Perform the logic to delete the collection based on email, brand, and carName
+      // For example, assuming you have a MongoDB collection, you might use something like:
+      await File.findOneAndDelete({ email, brand, carName });
+
+      // Replace the above line with the actual logic for deleting the collection in your database
+
+      res.json({ result: true, updatedImages });
+    } catch (error) {
+      console.error(`Error deleting collection: ${error.message}`);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+
 
 app.listen(3000, () => {
     console.log("Server started on port 3000");
