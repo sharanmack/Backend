@@ -45,17 +45,17 @@ const { env } = require('process');
 
 app.use(cors({origin:"*",}));
 
-// app.use('/uploads', express.static('uploads'));
-// mongoose.set('strictQuery',false)
-// const connectDB = async () => {
-//   try {
-//     const conn = await mongoose.connect(process.env.MONGO_URI);
-//     console.log(`MongoDB Connected: ${conn.connection.host}`);
-//   } catch (error) {
-//     console.log(error);
-//     process.exit(1);
-//   }
-// }
+app.use('/uploads', express.static('uploads'));
+mongoose.set('strictQuery',false)
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI);
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.log(error);
+    process.exit(1);
+  }
+}
 
 
 
