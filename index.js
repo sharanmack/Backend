@@ -5,8 +5,34 @@ const bodyParser = require('body-parser');
 const app = express();
 const multer = require('multer');
 const {User} = require("./Schema");
-const AWS = require("aws-sdk");
-const s3 = new AWS.S3()
+const { initializeApp } = require("firebase/app");
+const { getStorage, ref, getDownloadURL, uploadBytesResumable } = require("firebase/storage");
+
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC3R8TZeYRZfSkeF3Bb8Fl0vM8KQRYYyac",
+  authDomain: "image-upload-10d2f.firebaseapp.com",
+  projectId: "image-upload-10d2f",
+  storageBucket: "image-upload-10d2f.appspot.com",
+  messagingSenderId: "405769010406",
+  appId: "1:405769010406:web:5de0d29733990cd2664f27",
+  measurementId: "G-X6M5PY7J52"
+};
+
+initializeApp(firebaseConfig);
+const storage = getStorage();
+// const upload = multer({ storage: multer.memoryStorage() });
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, 'uploads'); 
+//   },
+//   filename: (req, file, cb) => {
+//     // console.log(req.body)
+//     cb(null, Date.now() + file.originalname );
+//   },
+// });
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 // const fs = require('fs');
 const path = require('path');
@@ -16,26 +42,124 @@ var nodemailer = require('nodemailer');
  
 const cors = require("cors");
 const { env } = require('process');
-app.use(cors({
-origin:"*",
-}));
 
-app.use('/uploads', express.static('uploads'));
-mongoose.set('strictQuery',false)
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGO_URI);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.log(error);
-    process.exit(1);
-  }
-}
+app.use(cors({origin:"*",}));
+
+// app.use('/uploads', express.static('uploads'));
+// mongoose.set('strictQuery',false)
+// const connectDB = async () => {
+//   try {
+//     const conn = await mongoose.connect(process.env.MONGO_URI);
+//     console.log(`MongoDB Connected: ${conn.connection.host}`);
+//   } catch (error) {
+//     console.log(error);
+//     process.exit(1);
+//   }
+// }
 
 
 
 app.use(bodyParser.json());
 app.use(express.json())
+
+const fileSchema = new mongoose.Schema({
+  images : String,
+  filenames: [String],
+  paths: [String],
+  email: String,
+  brand: String,
+  carName: String,
+  carModel: String,
+  fuelType: String,
+  carkilometre: Number,
+  carPrice: Number,
+  contactDetails: String,
+});
+
+const File = mongoose.model('File', fileSchema);
+
+app.post('/upload', upload.single("filename"), async (req, res) => {
+  try {
+    const file = req.file;
+   
+    const storageRef = ref(storage, `files/${file.originalname + "       " + Date.now()}`);
+
+    const metadata = {
+      contentType: file.mimetype,
+    };
+
+    const snapshot = await uploadBytesResumable(storageRef, file.buffer, metadata);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    const fileDoc = {
+      images: downloadURL,
+      email: req.body.email,
+      brand: req.body.brand,
+      carName: req.body.carName,
+      carModel: req.body.carModel,
+      fuelType: req.body.fuelType,
+      carkilometre: req.body.carkilometre,
+      carPrice: req.body.carPrice,
+      contactDetails: req.body.contactDetails,
+    };
+
+    await File.create(fileDoc);
+    res.status(201).json({ downloadURL: downloadURL });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error uploading files' });
+  }
+
+
+
+
+//     // // Assuming File is your mongoose model
+//     // await File.create(fileDoc);
+    
+//     res.status(201).json({ downloadURL: downloadURL });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Error uploading files' });
+//   }
+});
+
+
+// app.post('/upload', upload.single("filename"), async (req, res) => {
+//   try {
+//     console.log("file requested");
+//     const file = req.file;
+//     console.log("file");
+
+//     const storageRef = ref(storage, `files/${file.originalname + "       " + Date.now()}`);
+
+//     const metadata = {
+//       contentType: file.mimetype,
+//     };
+
+//     const snapshot = await uploadBytesResumable(storageRef, file.buffer, metadata);
+//     const downloadURL = await getDownloadURL(snapshot.ref);
+//     res.status(201).json({ downloadURL: downloadURL });
+
+//     // const fileDoc = {
+//     //   images: [{ filename: downloadURL, path: file.path }],
+//     //   email: req.body.email,
+//     //   brand: req.body.brand,
+//     //   carName: req.body.carName,
+//     //   carModel: req.body.carModel,
+//     //   fuelType: req.body.fuelType,
+//     //   carkilometre: req.body.carkilometre,
+//     //   carPrice: req.body.carPrice,
+//     //   contactDetails: req.body.contactDetails,
+//     // };
+
+//     // // Assuming File is your mongoose model
+//     // await File.create(fileDoc);
+    
+//     res.status(201).json({ downloadURL: downloadURL });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Error uploading files' });
+//   }
+// });
 
 app.delete('/deleteImage', (req, res) => {
   const imageName = req.query.imageName;
@@ -129,72 +253,71 @@ transporter.sendMail(mailOptions, function(error, info){
 
 
 
-const fileSchema = new mongoose.Schema({
-  images: [
-    {
-      filename: String,
-      path: String,
-    },
-  ],
-  filenames: [String],
-  paths: [String],
-  email: String,
-  brand: String,
-  carName: String,
-  carModel: String,
-  fuelType: String,
-  carkilometre: Number,
-  carPrice: Number,
-  contactDetails: String,
-});
+// const fileSchema = new mongoose.Schema({
+//   images: [
+//     {
+//       filename: String
+//     },
+//   ],
+//   filenames: [String],
+//   paths: [String],
+//   email: String,
+//   brand: String,
+//   carName: String,
+//   carModel: String,
+//   fuelType: String,
+//   carkilometre: Number,
+//   carPrice: Number,
+//   contactDetails: String,
+// });
 
-const File = mongoose.model('File', fileSchema);
+// const File = mongoose.model('File', fileSchema);
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads'); 
-  },
-  filename: (req, file, cb) => {
-    // console.log(req.body)
-    cb(null, Date.now() + file.originalname );
-  },
-});
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, 'uploads'); 
+//   },
+//   filename: (req, file, cb) => {
+//     // console.log(req.body)
+//     cb(null, Date.now() + file.originalname );
+//   },
+// });
 
-const upload = multer({ storage: storage });
+// const upload = multer({ storage: storage });
 
-app.post('/upload', upload.array('files', 4), async (req, res) => {
-  try {
-    const files = req.files;
-    const { email, brand, carName, carModel, fuelType, carkilometre, carPrice, contactDetails } = req.body;
+// app.post('/upload', upload.array('files', 4), async (req, res) => {
+//   try {
+//     const files = req.files;
+//     const { email, brand, carName, carModel, fuelType, carkilometre, carPrice, contactDetails } = req.body;
 
-    // const filenames = files.map(file => file.originalname);
-    // const paths = files.map(file => file.path);
+//     // const filenames = files.map(file => file.originalname);
+//     // const paths = files.map(file => file.path);
 
-    const images = files.map(file => ({
-      filename: file.filename,  // Use the generated filename
-      path: file.path,
-    }))
+//     const images = files.map(file => ({
+//       filename: file.filename,  // Use the generated filename
+//       path: file.path,
+//     }))
 
-    const fileDoc = {
-      images: images,
-      // paths: paths,
-      email: email,
-      brand: brand,
-      carName: carName,
-      carModel: carModel,
-      fuelType: fuelType,
-      carkilometre: carkilometre,
-      carPrice: carPrice,
-      contactDetails: contactDetails,
-    };
+//     const fileDoc = {
+//       images: images,
+//       // paths: paths,
+//       email: email,
+//       brand: brand,
+//       carName: carName,
+//       carModel: carModel,
+//       fuelType: fuelType,
+//       carkilometre: carkilometre,
+//       carPrice: carPrice,
+//       contactDetails: contactDetails,
+//     };
 
-    await File.create(fileDoc);
-    res.status(201).json({ message: 'Files uploaded successfully' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error uploading files' });
-  }
-});
+//     await File.create(fileDoc);
+//     res.status(201).json({ message: 'Files uploaded successfully' });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Error uploading files' });
+//   }
+// });
 
 app.get('/files', async (req, res) => {
   
@@ -207,7 +330,7 @@ app.get('/files', async (req, res) => {
 });
 
 
-const uploadDirectory = path.join(__dirname, 'uploads');
+// const uploadDirectory = path.join(__dirname, 'uploads');
 
 app.delete('/deletecar', async (req, res) => {
   const { email, brand, carName, images } = req.body;
@@ -254,7 +377,6 @@ app.delete('/deletecar', async (req, res) => {
 
 
 app.get('/myapp', async (req, res) => {
-  
  console.log("HIII")
  res.status(500).json({ CODE: 'HII BRO' });
 });
