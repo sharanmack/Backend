@@ -4,11 +4,13 @@ const bodyParser = require('body-parser');
 const app = express();
 const multer = require('multer');
 const {User} = require("./Schema");
+const AWS = require("aws-sdk");
+const s3 = new AWS.S3()
 
 // const fs = require('fs');
 const path = require('path');
 const fs = require('fs/promises');
-
+const PORT = process.env.PORT || 3000
 var nodemailer = require('nodemailer');
  
 const cors = require("cors")
@@ -18,16 +20,15 @@ origin:"*",
 
 app.use('/uploads', express.static('uploads'));
 
-mongoose.connect('mongodb://0.0.0.0:27017/Sharan', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log('Connected to MongoDB');
-  })
-  .catch((error) => {
-    console.error('Error connecting to MongoDB:', error);
-  });
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI);
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.log(error);
+    process.exit(1);
+  }
+}
 
 
 
@@ -159,7 +160,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-app.post('/upload', upload.array('files', 2), async (req, res) => {
+app.post('/upload', upload.array('files', 4), async (req, res) => {
   try {
     const files = req.files;
     const { email, brand, carName, carModel, fuelType, carkilometre, carPrice, contactDetails } = req.body;
@@ -204,110 +205,7 @@ app.get('/files', async (req, res) => {
 });
 
 
-// app.post("/deletecar",async(req,res)=>{
-//   const {email,brand,images} =req.body
-//   console.log(images)
-
-//   try {
-//    const post = await Post.findOne({ 'posts.name': name });
-
-//    if (!post) {
-//      return res.status(404).json({ postNotFound: true });
-//    }
-
-//    const targetPost = post.posts.find((p) => p.name === name);
-
-//    if (!targetPost) {
-//      return res.status(404).json({ postNotFound: true });
-//    }
-
-//    // Replace the entire comments array with the new one
-//    targetPost.comments = comments;
-//    await post.save();
-
-//    // Send a success response
-//    res.status(200).json({ success: true, message: 'Comments updated successfully' });
-//  } catch (error) {
-//    console.error(error);
-//    res.status(500).json({ error: 'An error occurred while updating comments' });
-//  }
-// })
-
-
-
 const uploadDirectory = path.join(__dirname, 'uploads');
-
-// app.delete('/deletecar', async (req, res) => {
-//   const { images } = req.body;
-  
-
-//   try {
-//     const updatedImages = [];
-
-//     // Loop through the images array and delete each file
-//     for (const image of images) {
-//       const { filename } = image;
-//       console.log(filename)
-//       // const filePath = path.join(uploadDirectory, filename);
-//       const imagePath = path.join(__dirname, 'uploads', filename); 
-
-//       try {
-//         // Check if the file exists
-//         await fs.access(imagePath);
-
-//         // Delete the file
-//         await fs.unlink(imagePath);
-
-//         // Add the deleted file to the updated images array
-//         // updatedImages.push(image);
-//       } catch (error) {
-//         console.error(`Error deleting file ${filename}: ${error.message}`);
-//       }
-//     }
-
-//     // Send the updated images array in the response
-//     res.json({ images: updatedImages });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: 'Internal server error' });
-//   }
-// });
-
-
-// app.delete('/deletecar', async (req, res) => {
-//   const { images } = req.body;
-
-  
-//   try {
-//     const updatedImages = [];
-
-//     // Loop through the images array and delete each file
-//     for (const image of images) {
-//       const { filename } = image;
-//       console.log(filename);
-//       const imagePath = path.join(__dirname, 'uploads', filename);
-
-//       try {
-//         // Check if the file exists
-//         await fs.access(imagePath);
-
-//         // Delete the file
-//         await fs.unlink(imagePath);
-
-//         // Add the deleted file to the updated images array
-//         updatedImages.push(image);
-//       } catch (error) {
-//         console.error(`Error deleting file ${filename}: ${error.message}`);
-//       }
-//     }
-
-//     res.json({ result: true });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: 'Internal server error' });
-//   }
-// });
-
 
 app.delete('/deletecar', async (req, res) => {
   const { email, brand, carName, images } = req.body;
@@ -336,8 +234,7 @@ app.delete('/deletecar', async (req, res) => {
 
     // After deleting images, delete the entire collection
     try {
-      // Perform the logic to delete the collection based on email, brand, and carName
-      // For example, assuming you have a MongoDB collection, you might use something like:
+   
       await File.findOneAndDelete({ email, brand, carName });
 
       // Replace the above line with the actual logic for deleting the collection in your database
@@ -354,20 +251,20 @@ app.delete('/deletecar', async (req, res) => {
 });
 
 
-
-
-app.listen(3000, () => {
-    console.log("Server started on port 3000");
-});
+app.get('/myapp', async (req, res) => {
   
+ console.log("HIII")
+ res.status(500).json({ CODE: 'HII BRO' });
+});
 
-// app.post('/upload', upload.single('file'), async (req, res) => {
-//   try {
-//     const { originalname, path ,email,brand } = req.file;
-//     const file = new File({ filename: originalname, brand: brand , email : email });
-//     await file.save();
-//     res.status(201).json({ message: 'File uploaded successfully' });
-//   } catch (error) {
-//     res.status(500).json({ message: 'Error uploading file' });
-//   }
+
+// app.listen(3000, () => {
+//     console.log("Server started on port 3000");
 // });
+  
+connectDB().then(() => {
+  app.listen(PORT, () => {
+      console.log("listening for requests");
+  })
+})
+
