@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -10,7 +11,7 @@ const s3 = new AWS.S3()
 // const fs = require('fs');
 const path = require('path');
 const fs = require('fs/promises');
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3000;
 var nodemailer = require('nodemailer');
  
 const cors = require("cors")
@@ -19,7 +20,7 @@ origin:"*",
 }));
 
 app.use('/uploads', express.static('uploads'));
-
+mongoose.set('strictQuery',false)
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI);
@@ -264,7 +265,7 @@ app.get('/myapp', async (req, res) => {
   
 connectDB().then(() => {
   app.listen(PORT, () => {
-      console.log("listening for requests");
+      console.log("listening for requests sharan");
   })
 })
 
