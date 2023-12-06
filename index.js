@@ -122,45 +122,6 @@ app.post('/upload', upload.single("filename"), async (req, res) => {
 //   }
 });
 
-
-// app.post('/upload', upload.single("filename"), async (req, res) => {
-//   try {
-//     console.log("file requested");
-//     const file = req.file;
-//     console.log("file");
-
-//     const storageRef = ref(storage, `files/${file.originalname + "       " + Date.now()}`);
-
-//     const metadata = {
-//       contentType: file.mimetype,
-//     };
-
-//     const snapshot = await uploadBytesResumable(storageRef, file.buffer, metadata);
-//     const downloadURL = await getDownloadURL(snapshot.ref);
-//     res.status(201).json({ downloadURL: downloadURL });
-
-//     // const fileDoc = {
-//     //   images: [{ filename: downloadURL, path: file.path }],
-//     //   email: req.body.email,
-//     //   brand: req.body.brand,
-//     //   carName: req.body.carName,
-//     //   carModel: req.body.carModel,
-//     //   fuelType: req.body.fuelType,
-//     //   carkilometre: req.body.carkilometre,
-//     //   carPrice: req.body.carPrice,
-//     //   contactDetails: req.body.contactDetails,
-//     // };
-
-//     // // Assuming File is your mongoose model
-//     // await File.create(fileDoc);
-    
-//     res.status(201).json({ downloadURL: downloadURL });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: 'Error uploading files' });
-//   }
-// });
-
 app.delete('/deleteImage', (req, res) => {
   const imageName = req.query.imageName;
   if (!imageName) {
@@ -253,71 +214,7 @@ transporter.sendMail(mailOptions, function(error, info){
 
 
 
-// const fileSchema = new mongoose.Schema({
-//   images: [
-//     {
-//       filename: String
-//     },
-//   ],
-//   filenames: [String],
-//   paths: [String],
-//   email: String,
-//   brand: String,
-//   carName: String,
-//   carModel: String,
-//   fuelType: String,
-//   carkilometre: Number,
-//   carPrice: Number,
-//   contactDetails: String,
-// });
 
-// const File = mongoose.model('File', fileSchema);
-
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, 'uploads'); 
-//   },
-//   filename: (req, file, cb) => {
-//     // console.log(req.body)
-//     cb(null, Date.now() + file.originalname );
-//   },
-// });
-
-// const upload = multer({ storage: storage });
-
-// app.post('/upload', upload.array('files', 4), async (req, res) => {
-//   try {
-//     const files = req.files;
-//     const { email, brand, carName, carModel, fuelType, carkilometre, carPrice, contactDetails } = req.body;
-
-//     // const filenames = files.map(file => file.originalname);
-//     // const paths = files.map(file => file.path);
-
-//     const images = files.map(file => ({
-//       filename: file.filename,  // Use the generated filename
-//       path: file.path,
-//     }))
-
-//     const fileDoc = {
-//       images: images,
-//       // paths: paths,
-//       email: email,
-//       brand: brand,
-//       carName: carName,
-//       carModel: carModel,
-//       fuelType: fuelType,
-//       carkilometre: carkilometre,
-//       carPrice: carPrice,
-//       contactDetails: contactDetails,
-//     };
-
-//     await File.create(fileDoc);
-//     res.status(201).json({ message: 'Files uploaded successfully' });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: 'Error uploading files' });
-//   }
-// });
 
 app.get('/files', async (req, res) => {
   
