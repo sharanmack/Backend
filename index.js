@@ -14,7 +14,8 @@ const fs = require('fs/promises');
 const PORT = process.env.PORT || 3000;
 var nodemailer = require('nodemailer');
  
-const cors = require("cors")
+const cors = require("cors");
+const { env } = require('process');
 app.use(cors({
 origin:"*",
 }));
