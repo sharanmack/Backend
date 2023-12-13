@@ -32,6 +32,17 @@ const storage = getStorage();
 //   },
 // });
 
+mongoose.connect('mongodb://0.0.0.0:27017/Sharan', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log('Connected to MongoDB');
+  })
+  .catch((error) => {
+    console.error('Error connecting to MongoDB:', error);
+  });
+
 const upload = multer({ storage: multer.memoryStorage() });
 
 // const fs = require('fs');
@@ -46,16 +57,16 @@ const { env } = require('process');
 app.use(cors({origin:"*",}));
 
 app.use('/uploads', express.static('uploads'));
-mongoose.set('strictQuery',false)
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGO_URI);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.log(error);
-    process.exit(1);
-  }
-}
+// mongoose.set('strictQuery',false)
+// const connectDB = async () => {
+//   try {
+//     const conn = await mongoose.connect(process.env.MONGO_URI);
+//     console.log(`MongoDB Connected: ${conn.connection.host}`);
+//   } catch (error) {
+//     console.log(error);
+//     process.exit(1);
+//   }
+// }
 
 
 
@@ -264,13 +275,13 @@ app.get('/myapp', async (req, res) => {
 });
 
 
-// app.listen(3000, () => {
-//     console.log("Server started on port 3000");
-// });
+app.listen(3000, () => {
+    console.log("Server started on port 3000");
+});
   
-connectDB().then(() => {
-  app.listen(PORT, () => {
-      console.log("listening for requests sharan");
-  })
-})
+// connectDB().then(() => {
+//   app.listen(PORT, () => {
+//       console.log("listening for requests sharan");
+//   })
+// })
 
