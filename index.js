@@ -64,8 +64,6 @@ app.use(express.json())
 
 const fileSchema = new mongoose.Schema({
   images : String,
-  filenames: [String],
-  paths: [String],
   email: String,
   brand: String,
   carName: String,
@@ -82,7 +80,7 @@ app.post('/upload', upload.single("filename"), async (req, res) => {
   try {
     const file = req.file;
    
-    const storageRef = ref(storage, `files/${file.originalname + "       " + Date.now()}`);
+    const storageRef = ref(storage, `files/${file.originalname + " " + Date.now()}`);
 
     const metadata = {
       contentType: file.mimetype,
@@ -110,16 +108,6 @@ app.post('/upload', upload.single("filename"), async (req, res) => {
   }
 
 
-
-
-//     // // Assuming File is your mongoose model
-//     // await File.create(fileDoc);
-    
-//     res.status(201).json({ downloadURL: downloadURL });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: 'Error uploading files' });
-//   }
 });
 
 app.delete('/deleteImage', (req, res) => {
@@ -254,12 +242,9 @@ app.delete('/deletecar', async (req, res) => {
       }
     }
 
-    // After deleting images, delete the entire collection
     try {
    
       await File.findOneAndDelete({ email, brand, carName });
-
-      // Replace the above line with the actual logic for deleting the collection in your database
 
       res.json({ result: true, updatedImages });
     } catch (error) {
