@@ -6,7 +6,7 @@ const app = express();
 const multer = require('multer');
 const {User} = require("./Schema");
 const { initializeApp } = require("firebase/app");
-const { getStorage, ref, getDownloadURL, uploadBytesResumable } = require("firebase/storage");
+const { getStorage, ref, getDownloadURL, uploadBytesResumable,deleteObject } = require("firebase/storage");
 
 
 const firebaseConfig = {
@@ -32,6 +32,17 @@ const storage = getStorage();
 //   },
 // });
 
+mongoose.connect('mongodb://0.0.0.0:27017/Sharan', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log('Connected to MongoDB');
+  })
+  .catch((error) => {
+    console.error('Error connecting to MongoDB:', error);
+  });
+
 const upload = multer({ storage: multer.memoryStorage() });
 
 // const fs = require('fs');
@@ -46,16 +57,16 @@ const { env } = require('process');
 app.use(cors({origin:"*",}));
 
 app.use('/uploads', express.static('uploads'));
-mongoose.set('strictQuery',false)
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGO_URI);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.log(error);
-    process.exit(1);
-  }
-}
+// mongoose.set('strictQuery',false)
+// const connectDB = async () => {
+//   try {
+//     const conn = await mongoose.connect(process.env.MONGO_URI);
+//     console.log(`MongoDB Connected: ${conn.connection.host}`);
+//   } catch (error) {
+//     console.log(error);
+//     process.exit(1);
+//   }
+// }
 
 
 
@@ -64,6 +75,7 @@ app.use(express.json())
 
 const fileSchema = new mongoose.Schema({
   images : String,
+  filename : String,
   email: String,
   brand: String,
   carName: String,
@@ -79,8 +91,8 @@ const File = mongoose.model('File', fileSchema);
 app.post('/upload', upload.single("filename"), async (req, res) => {
   try {
     const file = req.file;
-   
-    const storageRef = ref(storage, `files/${file.originalname + " " + Date.now()}`);
+    const filename = file.originalname + " " + Date.now();
+    const storageRef = ref(storage, `files/${filename}`);
 
     const metadata = {
       contentType: file.mimetype,
@@ -90,6 +102,7 @@ app.post('/upload', upload.single("filename"), async (req, res) => {
     const downloadURL = await getDownloadURL(snapshot.ref);
     const fileDoc = {
       images: downloadURL,
+      filename: filename,
       email: req.body.email,
       brand: req.body.brand,
       carName: req.body.carName,
@@ -110,24 +123,24 @@ app.post('/upload', upload.single("filename"), async (req, res) => {
 
 });
 
-app.delete('/deleteImage', (req, res) => {
-  const imageName = req.query.imageName;
-  if (!imageName) {
-    return res.status(400).send('ImageName parameter is required.');
-  }
+// app.delete('/deleteImage', (req, res) => {
+//   const imageName = req.query.imageName;
+//   if (!imageName) {
+//     return res.status(400).send('ImageName parameter is required.');
+//   }
 
-  const imagePath = path.join(__dirname, 'uploads', imageName); 
+//   const imagePath = path.join(__dirname, 'uploads', imageName); 
 
-  fs.unlink(imagePath, (err) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send('Internal Server Error');
-    } else {
-      console.log(`File ${imageName} has been deleted successfully.`);
-      res.status(200).send('File deleted successfully');
-    }
-  });
-});
+//   fs.unlink(imagePath, (err) => {
+//     if (err) {
+//       console.error(err);
+//       res.status(500).send('Internal Server Error');
+//     } else {
+//       console.log(`File ${imageName} has been deleted successfully.`);
+//       res.status(200).send('File deleted successfully');
+//     }
+//   });
+// });
 
 
 app.post("/login", async (req, res) => {
@@ -217,43 +230,48 @@ app.get('/files', async (req, res) => {
 
 // const uploadDirectory = path.join(__dirname, 'uploads');
 
+// app.delete('/deletecar', async (req, res) => {
+//   const { email, brand, carName, images,filename } = req.body;
+//   console.log(email,filename, brand, carName)
+//   const storageRef = ref(storage, "files/" + filename);
+//   try {
+//     await deleteObject(storageRef);
+//     res.status(200).send("Image deleted successfully");
+//     try {
+//       await File.findOneAndDelete({ email, brand, carName });
+
+//       res.json({ result: true});
+//     } catch (error) {
+//       console.error(`Error deleting collection: ${error.message}`);
+//       res.status(500).json({ error: 'Internal server error' });
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
+
 app.delete('/deletecar', async (req, res) => {
-  const { email, brand, carName, images } = req.body;
+  const { email, brand, carName, images, filename,carkilometre } = req.body;
+  const storageRef = ref(storage, "files/" + filename);
+  try {
+    await deleteObject(storageRef); 
+  } catch (error) {
+    console.error(`Error deleting image: ${error.message}`);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 
   try {
-    const updatedImages = [];
+    const result = await File.findOneAndDelete({ email, brand, carName,carkilometre });
 
-    // Loop through the images array and delete each file
-    for (const image of images) {
-      const { filename } = image;
-      const imagePath = path.join(__dirname, 'uploads', filename);
-
-      try {
-        // Check if the file exists
-        await fs.access(imagePath);
-
-        // Delete the file
-        await fs.unlink(imagePath);
-
-        // Add the deleted file to the updated images array
-        updatedImages.push(image);
-      } catch (error) {
-        console.error(`Error deleting file ${filename}: ${error.message}`);
-      }
-    }
-
-    try {
-   
-      await File.findOneAndDelete({ email, brand, carName });
-
-      res.json({ result: true, updatedImages });
-    } catch (error) {
-      console.error(`Error deleting collection: ${error.message}`);
-      res.status(500).json({ error: 'Internal server error' });
+    if (result) {
+      return res.status(200).json({ result: true, message: "Image and document deleted successfully" });
+    } else {
+      return res.status(404).json({ error: 'Document not found' });
     }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error(`Error deleting document: ${error.message}`);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -264,13 +282,13 @@ app.get('/myapp', async (req, res) => {
 });
 
 
-// app.listen(3000, () => {
-//     console.log("Server started on port 3000");
-// });
+app.listen(3000, () => {
+    console.log("Server started on port 3000");
+});
   
-connectDB().then(() => {
-  app.listen(PORT, () => {
-      console.log("listening for requests sharan");
-  })
-})
+// connectDB().then(() => {
+//   app.listen(PORT, () => {
+//       console.log("listening for requests sharan");
+//   })
+// })
 
