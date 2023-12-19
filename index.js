@@ -6,7 +6,7 @@ const app = express();
 const multer = require('multer');
 const {User} = require("./Schema");
 const { initializeApp } = require("firebase/app");
-const { getStorage, ref, getDownloadURL, uploadBytesResumable } = require("firebase/storage");
+const { getStorage, ref, getDownloadURL, uploadBytesResumable,deleteObject } = require("firebase/storage");
 
 
 const firebaseConfig = {
@@ -65,6 +65,7 @@ app.use(express.json())
 const fileSchema = new mongoose.Schema({
   images : String,
   email: String,
+  filename : String,
   brand: String,
   carName: String,
   carModel: String,
@@ -78,9 +79,8 @@ const File = mongoose.model('File', fileSchema);
 
 app.post('/upload', upload.single("filename"), async (req, res) => {
   try {
-    const file = req.file;
-   
-    const storageRef = ref(storage, `files/${file.originalname + " " + Date.now()}`);
+    const filename = file.originalname + " " + Date.now();
+    const storageRef = ref(storage, `files/${filename}`);
 
     const metadata = {
       contentType: file.mimetype,
@@ -90,6 +90,7 @@ app.post('/upload', upload.single("filename"), async (req, res) => {
     const downloadURL = await getDownloadURL(snapshot.ref);
     const fileDoc = {
       images: downloadURL,
+      filename: filename,
       email: req.body.email,
       brand: req.body.brand,
       carName: req.body.carName,
@@ -109,26 +110,6 @@ app.post('/upload', upload.single("filename"), async (req, res) => {
 
 
 });
-
-app.delete('/deleteImage', (req, res) => {
-  const imageName = req.query.imageName;
-  if (!imageName) {
-    return res.status(400).send('ImageName parameter is required.');
-  }
-
-  const imagePath = path.join(__dirname, 'uploads', imageName); 
-
-  fs.unlink(imagePath, (err) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send('Internal Server Error');
-    } else {
-      console.log(`File ${imageName} has been deleted successfully.`);
-      res.status(200).send('File deleted successfully');
-    }
-  });
-});
-
 
 app.post("/login", async (req, res) => {
     const { phone, pass } = req.body;
@@ -218,45 +199,28 @@ app.get('/files', async (req, res) => {
 // const uploadDirectory = path.join(__dirname, 'uploads');
 
 app.delete('/deletecar', async (req, res) => {
-  const { email, brand, carName, images } = req.body;
+  const { email, brand, carName, images, filename,carkilometre } = req.body;
+  const storageRef = ref(storage, "files/" + filename);
+  try {
+    await deleteObject(storageRef); 
+  } catch (error) {
+    console.error(`Error deleting image: ${error.message}`);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 
   try {
-    const updatedImages = [];
+    const result = await File.findOneAndDelete({ email, brand, carName,carkilometre });
 
-    // Loop through the images array and delete each file
-    for (const image of images) {
-      const { filename } = image;
-      const imagePath = path.join(__dirname, 'uploads', filename);
-
-      try {
-        // Check if the file exists
-        await fs.access(imagePath);
-
-        // Delete the file
-        await fs.unlink(imagePath);
-
-        // Add the deleted file to the updated images array
-        updatedImages.push(image);
-      } catch (error) {
-        console.error(`Error deleting file ${filename}: ${error.message}`);
-      }
-    }
-
-    try {
-   
-      await File.findOneAndDelete({ email, brand, carName });
-
-      res.json({ result: true, updatedImages });
-    } catch (error) {
-      console.error(`Error deleting collection: ${error.message}`);
-      res.status(500).json({ error: 'Internal server error' });
+    if (result) {
+      return res.status(200).json({ result: true, message: "Image and document deleted successfully" });
+    } else {
+      return res.status(404).json({ error: 'Document not found' });
     }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error(`Error deleting document: ${error.message}`);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
-
 
 app.get('/myapp', async (req, res) => {
  console.log("HIII")
