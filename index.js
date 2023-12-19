@@ -79,6 +79,7 @@ const File = mongoose.model('File', fileSchema);
 
 app.post('/upload', upload.single("filename"), async (req, res) => {
   try {
+    const file = req.file;
     const filename = file.originalname + " " + Date.now();
     const storageRef = ref(storage, `files/${filename}`);
 
